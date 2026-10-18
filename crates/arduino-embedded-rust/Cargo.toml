@@ -1,0 +1,10 @@
+[package]
+name               = "arduino-embedded-rust"
+version            = { workspace = true }
+edition            = { workspace = true }
+
+[dependencies]
+arduino-uno-r4-hal = { workspace = true }
+cortex-m-rt        = { workspace = true }
+embedded-hal       = { workspace = true }
+panic-halt         = { workspace = true }

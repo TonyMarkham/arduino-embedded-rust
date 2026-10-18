@@ -1,0 +1,11 @@
+# Arduino
+build/
+
+# Rust
+target/
+
+# IDE
+.idea/
+
+# Firmware build output
+*.bin

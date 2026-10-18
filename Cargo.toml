@@ -1,0 +1,34 @@
+[workspace]
+members            = [
+    "crates/arduino-embedded-rust",
+]
+resolver           = "3"
+
+[workspace.package]
+version            = "0.1.0"
+edition            = "2024"
+
+[workspace.dependencies]
+# HAL for the UNO R4 — the WiFi board needs the `uno-r4-wifi` feature
+# (its header pin mapping differs from the Minima board).
+arduino-uno-r4-hal = { version = "0.2.0", default-features = false, features = ["uno-r4-wifi"] }
+# Runtime: startup code, interrupt vector table, the #[entry] attribute
+cortex-m-rt        = { version = "0.7.7", features = ["set-vtor"] }
+# The trait collection shared by all embedded Rust crates (DelayNs, etc.)
+embedded-hal       = { version = "1.0.0" }
+# On panic: halt the core. Simplest choice with no debugger attached.
+panic-halt         = { version = "1.0.0" }
+
+[workspace.lints.clippy]
+unwrap_used        = "deny"
+expect_used        = "deny"
+panic              = "deny"
+
+[workspace.lints.rust]
+unused_must_use    = "deny"
+
+[profile.release]
+opt-level          = 3    # speed matters on a 48 MHz chip
+lto                = true # link-time optimization: smaller + faster firmware
+codegen-units      = 1    # more optimization, slower build — fine for firmware
+debug              = true # keep symbols so cargo size / backtraces are readable
