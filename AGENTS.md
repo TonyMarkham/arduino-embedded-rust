@@ -21,13 +21,26 @@ Known-hard parts (research before designing, source = Arduino's C++ libs):
 - LED matrix: ownership (RA4M1 vs ESP32-S3) must be verified from the
   `Arduino_LED_Matrix` library and board schematic before writing a driver.
 
+Possible extension — BLE provisioning of WiFi credentials:
+- BLE lives only on the ESP32-S3 (RA4M1 has no radio). Stock bridge firmware
+  likely exposes no user BLE (unverified).
+- Options: (A) fork/extend `uno-r4-wifi-usb-bridge` with a NimBLE GATT service
+  storing creds in NVS — RA4M1 protocol unchanged; (B) replace ESP32 firmware
+  entirely with a self-defined protocol; (C) skip BLE — creds on RA4M1 flash,
+  updated via USB serial or portal.
+- Custom ESP32-S3 flashing is officially documented:
+  https://docs.arduino.cc/tutorials/uno-r4-wifi/esp32-upload (esptool, download
+  mode). Firmware must be provisioned in sequence: hard-coded → serial → BLE;
+  do not block the mission on this.
+
 ## Non-negotiable
 
 1. **Never write project code or config for the owner.** No creating/editing
    `Cargo.toml`, `src/*`, `memory.x`, `build.rs`, `.cargo/*`, scripts, etc.
    The only files an agent may write are documentation (README.md, AGENTS.md).
-   If a fix requires code changes, give the owner the file contents + explanation
-   in chat and let them apply it.
+   Code *inside* documentation or chat is fine and expected — guides may
+   contain complete file contents; the owner applies them. The prohibition is
+   on writing to project source/config files directly.
 2. **Never run build/flash/install commands on the owner's behalf.** Guide,
    don't execute. Checkpoints in README.md are the owner's to pass.
 3. **No editorializing in responses or docs.** No "lesson value" asides, no
@@ -60,9 +73,15 @@ Known-hard parts (research before designing, source = Arduino's C++ libs):
 - Never suggest Renesas `rfp-cli`, raw `bossac` erase/offset commands, or
   full-chip images as a way to "clear" the board. Safe wipe = upload any valid
   sketch with `arduino-cli upload` (bootloader untouched).
-- The HAL dependency must stay
-  `arduino-uno-r4-hal`, default-features off, feature `uno-r4-wifi` (the Minima
-  pin mapping would silently target the wrong pins).
+- The HAL dependency is the owner's own **`unor4-hal`** crate (crates.io,
+  https://github.com/TonyMarkham/unor4-hal — spec in HalSpec.md). Keep its
+  default features (the `wifi` pin map); never add `minima` alongside `wifi`
+  (compile error by design). Firmware must build `cortex-m-rt` with its
+  **`device`** feature — `unor4-hal` ships the 32-entry IELSR vector table and
+  an empty `device.x`; without the feature the interrupt table does not link.
+- The course's original HAL, `arduino-uno-r4-hal` 0.2, produced the
+  hardware-verified 1,584-byte blinky (Parts 2–6, first run). It is history —
+  do not reintroduce it into the docs or manifests.
 
 ## Documentation conventions (README.md, Basics.md, BlinkSketch.md, BlinkEmbedded.md)
 

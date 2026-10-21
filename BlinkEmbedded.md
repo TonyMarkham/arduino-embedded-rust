@@ -57,11 +57,16 @@ Prerequisites:
 > edition            = "2024"
 >
 > [workspace.dependencies]
-> # HAL for the UNO R4 — the WiFi board needs the `uno-r4-wifi` feature
-> # (its header pin mapping differs from the Minima board).
-> arduino-uno-r4-hal = { version = "0.2.0", default-features = false, features = ["uno-r4-wifi"] }
-> # Runtime: startup code, interrupt vector table, the #[entry] attribute
-> cortex-m-rt        = { version = "0.7.7", features = ["set-vtor"] }
+> # HAL for the UNO R4 — its default features select the `wifi` pin map
+> # (this board's header mapping differs from the Minima's; the two maps
+> # are mutually exclusive, enforced with a compile error).
+> unor4-hal          = { version = "0.1.2" }
+> # Runtime: startup code, interrupt vector table, the #[entry] attribute.
+> # `device` is required by unor4-hal: its `intc` module ships the chip's
+> # 32-entry interrupt vector table, which replaces cortex-m-rt's generic
+> # table only when this feature is on (the HAL's build script supplies
+> # the matching `device.x`).
+> cortex-m-rt        = { version = "0.7.7", features = ["set-vtor", "device"] }
 > # The trait collection shared by all embedded Rust crates (DelayNs, etc.)
 > embedded-hal       = { version = "1.0.0" }
 > # On panic: halt the core. Simplest choice with no debugger attached.
@@ -99,7 +104,7 @@ Prerequisites:
 > edition            = { workspace = true }
 >
 > [dependencies]
-> arduino-uno-r4-hal = { workspace = true }
+> unor4-hal          = { workspace = true }
 > cortex-m-rt        = { workspace = true }
 > embedded-hal       = { workspace = true }
 > panic-halt         = { workspace = true }
@@ -201,7 +206,7 @@ the memory map.
 > #![no_std]   // don't link the standard library — no OS down here
 > #![no_main]  // no standard main(); we provide our own entry point
 >
-> use arduino_uno_r4_hal::Peripherals;
+> use unor4_hal::Peripherals;
 > use embedded_hal::delay::DelayNs;
 > use panic_halt as _; // crash handler: halt the core on panic
 >
@@ -265,8 +270,9 @@ the memory map.
 **What/why:** `size` shows text (flash used), data (initialized globals copied
 to RAM), and bss (zeroed RAM). Compare against the C++ baseline from Step 1.3b
 (~52 KB): the Rust build should be far smaller, because the HAL links only
-what you call. Verified in this course's first run: **1,584 bytes** — a 33×
-reduction.
+what you call. For scale: the course's first run, on the previous HAL,
+produced **1,584 bytes** of `text` — a 33× reduction. `unor4-hal` should land
+in the same range; the number you get at this checkpoint is the new baseline.
 
 ✅ **Checkpoint:** build succeeds. If not, see Troubleshooting in Basics.md.
 
@@ -287,9 +293,10 @@ reduction.
 > ```
 >
 > Output lands in the package directory; the ELF it reads is at the
-> workspace-root `target\` (relative from here: `..\..\target\`). Expected
-> result (verified in this course): an ELF of several hundred KB reduced to
-> ~1.6 KB — your 1,584 bytes of `text`, page-aligned:
+> workspace-root `target\` (relative from here: `..\..\target\`). For scale:
+> in the course's first run (previous HAL) an ELF of several hundred KB
+> reduced to ~1.6 KB — 1,584 bytes of `text`, page-aligned. Expect similar;
+> record your real numbers:
 >
 > ```powershell
 > Get-Item ..\..\target\thumbv7em-none-eabihf\release\arduino-embedded-rust, firmware.bin |
@@ -334,10 +341,14 @@ above the 16 KiB described in Basics.md.
 >
 > The onboard LED should blink once per second. If it does: you just wrote,
 > linked, and flashed a bare-metal ARM program with no OS, no bootloader
-> magic, and no C. 🎉 Verified in this course's first run — the HAL's clock
-> init, GPIO, and delay all work on real hardware.
+> magic, and no C. 🎉 For `unor4-hal` this is the first hardware test inside
+> this course: a blinking D13 proves its clock init, GPIO, and delay all
+> work on your board. If it doesn't: Troubleshooting in Basics.md first —
+> and if the build and upload are clean but the LED stays dark, that is a
+> bug worth reporting against `unor4-hal`.
 
 ---
 
-Next: the roadmap in [README](README.md) — toward the project goal: receiving
-a data packet over WiFi and displaying a pattern on the LED matrix.
+Next: [Serial.md](Serial.md) — Part 7 gives the board a voice: serial output
+from Rust, and why the USB monitor can't hear it (it needs a USB-UART adapter
+on D0/D1).

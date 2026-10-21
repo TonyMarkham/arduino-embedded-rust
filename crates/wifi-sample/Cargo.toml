@@ -1,0 +1,26 @@
+[package]
+name               = "wifi-sample"
+version            = "0.1.0"
+edition            = "2024"
+
+# Standalone: not a member of this repo's workspace (root Cargo.toml lists
+# only crates/arduino-embedded-rust). The empty [workspace] table detaches
+# this package so cargo commands inside it build it alone.
+[workspace]
+
+[dependencies]
+# HAL for the UNO R4 — default features select the `wifi` pin map.
+unor4-hal          = "0.1.2"
+# Runtime: startup code, interrupt vector table, the #[entry] attribute.
+# `device` is required by unor4-hal (its intc module ships the vector table).
+cortex-m-rt        = { version = "0.7.7", features = ["set-vtor", "device"] }
+# The trait collection shared by all embedded Rust crates (DelayNs, etc.)
+embedded-hal       = { version = "1.0.0" }
+# On panic: halt the core. Simplest choice with no debugger attached.
+panic-halt         = { version = "1.0.0" }
+
+[profile.release]
+opt-level          = 3    # speed matters on a 48 MHz chip
+lto                = true # link-time optimization: smaller + faster firmware
+codegen-units      = 1    # more optimization, slower build — fine for firmware
+debug              = true # keep symbols so cargo size / backtraces are readable
