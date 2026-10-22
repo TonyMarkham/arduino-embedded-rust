@@ -1,0 +1,33 @@
+[package]
+name               = "udp-push-sleep"
+version            = "0.1.0"
+edition            = "2024"
+
+# Standalone: not a member of this repo's workspace (root Cargo.toml lists
+# only crates/arduino-embedded-rust). The empty [workspace] table detaches
+# this package so cargo commands inside it build it alone.
+[workspace]
+
+[dependencies]
+# HAL for the UNO R4 — default features select the `wifi` pin map.
+# `uart-irq` adds the interrupt-mode SCI driver (UartIrq): RXI/TXI/ERI
+# wired through IELSR + NVIC, receive ring filled by the handler.
+unor4-hal          = { version = "0.1.2", features = ["uart-irq"] }
+# The RA4M1 PAC, for the SCI1 engine marker in the UartIrq type:
+# `UartIrq<ra4m1::SCI1>`. Same version unor4-hal builds against.
+ra4m1              = "0.2.0"
+# WFI sleep and the PRIMASK disable/enable around the sleep check.
+cortex-m           = "0.7.9"
+# Runtime: startup code, interrupt vector table, the #[entry] attribute.
+# `device` is required by unor4-hal (its intc module ships the vector table).
+cortex-m-rt        = { version = "0.7.7", features = ["set-vtor", "device"] }
+# The trait collection shared by all embedded Rust crates (DelayNs, etc.)
+embedded-hal       = { version = "1.0.0" }
+# On panic: halt the core. Simplest choice with no debugger attached.
+panic-halt         = { version = "1.0.0" }
+
+[profile.release]
+opt-level          = 3    # speed matters on a 48 MHz chip
+lto                = true # link-time optimization: smaller + faster firmware
+codegen-units      = 1    # more optimization, slower build — fine for firmware
+debug              = true # keep symbols so cargo size / backtraces are readable

@@ -1,0 +1,3 @@
+[build]
+# The RA4M1 is an ARM Cortex-M4F (ARMv7E-M with a hardware FPU)
+target = "thumbv7em-none-eabihf"
